@@ -110,6 +110,7 @@ ansible_user=ec2-user
         sshagent(credentials: [SSH_CREDS]) {
           dir('ansible') {
             sh '''
+              ansible-playbook -i inventory.ini bootstrap.yml
               ansible-playbook -i inventory.ini common.yml
               ansible-playbook -i inventory.ini master.yml
               ansible-playbook -i inventory.ini worker.yml
