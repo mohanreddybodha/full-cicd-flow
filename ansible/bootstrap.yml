@@ -3,8 +3,6 @@
   gather_facts: no
 
   tasks:
-    - name: Install Python and core dependencies
+    - name: Install Python
       raw: |
-        yum install -y python3 python3-libselinux sudo
-        ln -sf /usr/bin/python3 /usr/bin/python
-      changed_when: false
+        dnf install -y python3 python3-libselinux || true
