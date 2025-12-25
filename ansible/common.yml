@@ -4,18 +4,14 @@
 
   tasks:
 
-    # -----------------------------
-    # Swap (Kubernetes requirement)
-    # -----------------------------
+    # Swap
     - name: Disable swap immediately
       raw: swapoff -a || true
 
     - name: Disable swap permanently
       raw: sed -i.bak '/ swap /s/^/#/' /etc/fstab
 
-    # -----------------------------
-    # Kernel modules (NO copy)
-    # -----------------------------
+    # Kernel modules
     - name: Configure kernel modules
       raw: |
         mkdir -p /etc/modules-load.d
@@ -24,15 +20,13 @@
         br_netfilter
         EOF
 
-    - name: Load kernel modules now
+    - name: Load kernel modules
       raw: |
         modprobe overlay
         modprobe br_netfilter
 
-    # -----------------------------
-    # Sysctl (NO copy)
-    # -----------------------------
-    - name: Configure sysctl for Kubernetes
+    # Sysctl
+    - name: Configure sysctl
       raw: |
         cat <<EOF > /etc/sysctl.d/k8s.conf
         net.bridge.bridge-nf-call-iptables = 1
@@ -41,3 +35,30 @@
 
     - name: Apply sysctl
       raw: sysctl --system
+
+    # Container runtime
+    - name: Install containerd
+      raw: |
+        dnf install -y containerd
+        mkdir -p /etc/containerd
+        containerd config default > /etc/containerd/config.toml
+        sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+        systemctl enable --now containerd
+
+    # Kubernetes repo
+    - name: Add Kubernetes repo
+      raw: |
+        cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+        [kubernetes]
+        name=Kubernetes
+        baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+        enabled=1
+        gpgcheck=1
+        gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+        EOF
+
+    # Kubernetes components
+    - name: Install Kubernetes packages
+      raw: |
+        dnf install -y kubelet kubeadm kubectl
+        systemctl enable kubelet
