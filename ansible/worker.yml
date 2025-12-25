@@ -4,4 +4,4 @@
 
   tasks:
     - name: Join worker to cluster
-      raw: kubeadm join ...
+      command: sh /tmp/kubeadm_join.sh

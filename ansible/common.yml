@@ -1,6 +1,6 @@
 - hosts: all
   become: yes
-  gather_facts: yes   # now safe because Python is installed
+  gather_facts: yes
 
   tasks:
     # Disable swap
