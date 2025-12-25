@@ -4,7 +4,7 @@ provider "aws" {
 
 
 
-resource "aws_security_group" "k8s-sg" {
+resource "security_group" "k8s-sg" {
   name        = "k8s-cluster-sg"
   description = "Security group for kubeadm Kubernetes cluster"
 
@@ -76,7 +76,7 @@ resource "aws_instance" "master" {
   ami           = var.ami
   instance_type = "t2.medium"
   key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.k8s-sg.id]
+  vpc_security_group_ids = [security_group.k8s-sg.id]
 
   tags = {
     Name = "k8s-master"
@@ -90,7 +90,7 @@ resource "aws_instance" "worker" {
   ami           = var.ami
   instance_type = "t2.micro"
   key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.k8s-sg.id]
+  vpc_security_group_ids = [security_group.k8s-sg.id]
 
   tags = {
     Name = "k8s-worker-${count.index}"
