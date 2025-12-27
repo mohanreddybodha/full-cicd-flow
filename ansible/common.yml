@@ -57,14 +57,15 @@
         set -e
         export DEBIAN_FRONTEND=noninteractive
 
-        apt-get install -y ca-certificates curl gpg apt-transport-https
+        apt-get install -y ca-certificates curl gpg        
         mkdir -p /etc/apt/keyrings
 
         curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key \
-          | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+          | gpg --dearmor | tee /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
         echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" \
-          > /etc/apt/sources.list.d/kubernetes.list
+          | tee /etc/apt/sources.list.d/kubernetes.list
+       
 
     # -------------------------
     # Kubernetes components
@@ -75,7 +76,7 @@
         export DEBIAN_FRONTEND=noninteractive
 
         apt-get update -y
-        apt-get install -y kubelet kubeadm kubectl
+        apt-get install -y --no -install-recommends kubelet kubeadm kubectl
 
         apt-mark hold kubelet kubeadm kubectl
-        systemctl enable kubelet
+        systemctl enable kubelet --now kubelet || true
