@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     IMAGE_NAME   = "mohanreddybodha/feedback"
-    IMAGE_TAG    = "v1"
+    IMAGE_TAG    = "v${BUILD_NUMBER}"
     DOCKER_CREDS = "dockerhub-creds"
     SSH_CREDS    = "ec2-ssh-key"
   }
@@ -136,7 +136,10 @@ ${worker_entries}
       steps {
         sshagent(credentials: [SSH_CREDS]) {
           dir('ansible') {
-            sh 'ansible-playbook -i inventory.ini deploy-app.yml'
+            sh '''
+              sed -i 's/{{ IMAGE_TAG }}/${IMAGE_TAG}/g' deploy-app.yml
+              ansible-playbook -i inventory.ini deploy-app.yml
+            '''
           }
         }
       }
