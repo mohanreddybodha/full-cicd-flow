@@ -16,4 +16,4 @@ spec:
       - name: app1
         image: mohanreddybodha/cicd-pipeline-project-image-using-jenkins:latest
         ports:
-        - containerPort: 80
+        - containerPort: 5000
