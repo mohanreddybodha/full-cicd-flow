@@ -4,12 +4,10 @@
 
   tasks:
     - name: Copy join command from master
-      delegate_to: "{{ groups['master'][0] }}"
-      run_once: true
-      fetch:
+      copy:
         src: /tmp/kubeadm_join.sh
         dest: /tmp/kubeadm_join.sh
-        flat: yes
+        mode: '0755'
 
     - name: Join cluster
       command: sh /tmp/kubeadm_join.sh
