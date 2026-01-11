@@ -37,5 +37,5 @@
 
     - name: Apply Kubernetes manifests
       become_user: ubuntu
-      shell: |
-        kubectl apply -f /home/ubuntu/k8s-manifests/
+      command: kubectl apply --dry-run=client -f /home/ubuntu/k8s-manifests/
+
