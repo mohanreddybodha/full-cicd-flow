@@ -13,7 +13,7 @@
         group: ubuntu
         mode: '0755'
 
-    - name: Remove kubeconfig directory if it exists
+    - name: Remove old kubeconfig if it exists
       file:
         path: /home/ubuntu/.kube/config
         state: absent
@@ -34,8 +34,8 @@
         owner: ubuntu
         group: ubuntu
 
-
     - name: Apply Kubernetes manifests
       become_user: ubuntu
-      command: kubectl apply -f /home/ubuntu/k8s-manifests/
-
+      shell: kubectl apply -f /home/ubuntu/k8s-manifests/
+      args:
+        chdir: /home/ubuntu/k8s-manifests
