@@ -132,29 +132,12 @@ ${worker_entries}
       steps {
         sshagent(credentials: [SSH_CREDS]) {
           sh """
-            ssh ubuntu@${MASTER_IP} << EOF
+            ssh ubuntu@${MASTER_IP} '
             helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
             helm repo update
             helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
               -n monitoring --create-namespace
-            EOF
-          """
-        }
-      }
-    }
-
-    stage('Expose Monitoring UI') {
-      steps {
-        sshagent(credentials: [SSH_CREDS]) {
-          sh """
-            ssh ubuntu@${MASTER_IP} << EOF
-            kubectl patch svc monitoring-grafana -n monitoring \
-              -p '{"spec":{"type":"NodePort"}}'
-            kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
-              -p '{"spec":{"type":"NodePort"}}'
-            kubectl patch svc monitoring-kube-prometheus-alertmanager -n monitoring \
-              -p '{"spec":{"type":"NodePort"}}'
-            EOF
+            '
           """
         }
       }
