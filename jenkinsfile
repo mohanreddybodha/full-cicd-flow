@@ -11,7 +11,7 @@ pipeline {
   options {
     timeout(time: 30, unit: 'MINUTES')
     timestamps()
-    disableConcurrentBuilds()   
+    disableConcurrentBuilds()
   }
 
   stages {
@@ -77,8 +77,6 @@ pipeline {
         }
       }
     }
-   
-
 
     stage('Generate Ansible Inventory') {
       steps {
@@ -92,27 +90,21 @@ pipeline {
             script: "cd terraform && terraform output -json worker_ips | jq -r '.[]'",
             returnStdout: true
           ).trim()
-          
+
           def worker_entries = worker_ips
             .split('\n')
             .collect { ip ->
               "${ip} ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3"
-          }
-          .join('\n')
-          
+            }
+            .join('\n')
+
           writeFile file: "ansible/inventory.ini", text: """
 [master]
 ${master_ip} ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
 
-
 [workers]
 ${worker_entries}
-
 """
-
-
-
-
         }
       }
     }
@@ -136,11 +128,11 @@ ${worker_entries}
       steps {
         sshagent(credentials: [SSH_CREDS]) {
           dir('ansible') {
-            sh '''
-              sed -i "s|{{ IMAGE_NAME }}|${IMAGE_NAME}|g" deploy-app.yml
-              sed -i "s|{{ IMAGE_TAG }}|${IMAGE_TAG}|g" deploy-app.yml
-              ansible-playbook -i inventory.ini deploy-app.yml
-            '''
+            sh """
+              ansible-playbook -i inventory.ini deploy-app.yml \
+                -e image_name=${IMAGE_NAME} \
+                -e image_tag=${IMAGE_TAG}
+            """
           }
         }
       }
