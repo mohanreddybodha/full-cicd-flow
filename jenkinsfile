@@ -17,22 +17,16 @@ pipeline {
   stages {
 
     stage('Checkout Code') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Install Dependencies') {
       parallel {
         stage('Backend Deps') {
-          steps {
-            sh 'cd backend && npm install'
-          }
+          steps { sh 'cd backend && npm install' }
         }
         stage('Frontend Deps') {
-          steps {
-            sh 'cd frontend && npm install'
-          }
+          steps { sh 'cd frontend && npm install' }
         }
       }
     }
@@ -49,9 +43,7 @@ pipeline {
     }
 
     stage('Test Backend') {
-      steps {
-        sh 'cd backend && node -c server.js'
-      }
+      steps { sh 'cd backend && node -c server.js' }
     }
 
     stage('Build & Push Docker Image') {
@@ -81,7 +73,7 @@ pipeline {
     stage('Generate Ansible Inventory') {
       steps {
         script {
-          def master_ip = sh(
+          env.MASTER_IP = sh(
             script: "cd terraform && terraform output -raw master_ip",
             returnStdout: true
           ).trim()
@@ -91,16 +83,14 @@ pipeline {
             returnStdout: true
           ).trim()
 
-          def worker_entries = worker_ips
-            .split('\n')
+          def worker_entries = worker_ips.split('\n')
             .collect { ip ->
               "${ip} ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3"
-            }
-            .join('\n')
+            }.join('\n')
 
           writeFile file: "ansible/inventory.ini", text: """
 [master]
-${master_ip} ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
+${env.MASTER_IP} ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
 
 [workers]
 ${worker_entries}
@@ -137,11 +127,43 @@ ${worker_entries}
         }
       }
     }
+
+    stage('Deploy Monitoring') {
+      steps {
+        sshagent(credentials: [SSH_CREDS]) {
+          sh """
+            ssh ubuntu@${MASTER_IP} << EOF
+            helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+            helm repo update
+            helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+              -n monitoring --create-namespace
+            EOF
+          """
+        }
+      }
+    }
+
+    stage('Expose Monitoring UI') {
+      steps {
+        sshagent(credentials: [SSH_CREDS]) {
+          sh """
+            ssh ubuntu@${MASTER_IP} << EOF
+            kubectl patch svc monitoring-grafana -n monitoring \
+              -p '{"spec":{"type":"NodePort"}}'
+            kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
+              -p '{"spec":{"type":"NodePort"}}'
+            kubectl patch svc monitoring-kube-prometheus-alertmanager -n monitoring \
+              -p '{"spec":{"type":"NodePort"}}'
+            EOF
+          """
+        }
+      }
+    }
   }
 
   post {
     success {
-      echo "✅ CI/CD Pipeline completed successfully"
+      echo "✅ CI/CD + Kubernetes + Monitoring pipeline completed successfully"
     }
     failure {
       echo "❌ Pipeline failed. Check logs."
