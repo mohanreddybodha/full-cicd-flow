@@ -1,7 +1,9 @@
 output "master_ip" {
-  value = aws_instance.master.public_ip
+  description = "Elastic IP of Kubernetes master"
+  value       = aws_eip.master_eip.public_ip
 }
 
 output "worker_ips" {
-  value = aws_instance.worker[*].public_ip
+  description = "Elastic IPs of Kubernetes workers"
+  value       = aws_eip.worker_eip[*].public_ip
 }
