@@ -61,10 +61,10 @@ pipeline {
     }
 
     stage('Terraform Init & Apply') {
-      when {
-         branch 'main'
-         changeset "terraform/**"
-      }
+     // when {
+       //  branch 'main'
+         //changeset "terraform/**"
+     // }
       steps {
         dir('terraform') {
           sh '''
