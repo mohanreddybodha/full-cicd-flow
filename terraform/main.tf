@@ -5,6 +5,16 @@ provider "aws" {
   region = var.region
 }
 
+
+terraform {
+  backend "s3" {
+    bucket = "terraform-state-jenkins-191"
+    key    = "k8s/terraform.tfstate"
+    region = "ap-south-1"
+  }
+}
+
+
 ########################################
 # Security Group
 ########################################
