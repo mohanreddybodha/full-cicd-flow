@@ -11,7 +11,7 @@
       ignore_errors: yes
 
     # ------------------------
-    # Disable swap
+    # Disable swap (required by Kubernetes)
     # ------------------------
     - name: Disable swap
       command: swapoff -a
@@ -35,7 +35,7 @@
         - br_netfilter
 
     # ------------------------
-    # Sysctl
+    # Sysctl configuration
     # ------------------------
     - name: Apply sysctl params
       sysctl:
@@ -62,33 +62,50 @@
         update_cache: yes
       when: not containerd_bin.stat.exists
 
+    - name: Configure containerd cgroup driver
+      copy:
+        dest: /etc/containerd/config.toml
+        content: |
+          version = 2
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+      notify: Restart containerd
+
     - name: Enable containerd
       systemd:
         name: containerd
         enabled: yes
-        state: restarted
+        state: started
 
     # ------------------------
-    # Kubernetes repo (aligned with raw history)
+    # Kubernetes repository (IDEMPOTENT)
     # ------------------------
+    - name: Ensure keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
     - name: Check Kubernetes apt key
       stat:
         path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       register: k8s_key
 
-    - name: Fail if Kubernetes key is missing
-      fail:
-        msg: "Kubernetes apt key not found. Node must be bootstrapped first."
+    - name: Install Kubernetes apt key (only if missing)
+      get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        mode: '0644'
       when: not k8s_key.stat.exists
 
-    - name: Add Kubernetes repo
+    - name: Add Kubernetes apt repository
       apt_repository:
         repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
         state: present
         filename: kubernetes
 
     # ------------------------
-    # Kubernetes binaries
+    # Kubernetes components
     # ------------------------
     - name: Check kubeadm
       stat:
@@ -107,4 +124,10 @@
 
     - name: Hold Kubernetes packages
       command: apt-mark hold kubelet kubeadm kubectl
+      when: not kubeadm_bin.stat.exists
 
+  handlers:
+    - name: Restart containerd
+      systemd:
+        name: containerd
+        state: restarted
