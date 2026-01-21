@@ -4,12 +4,27 @@
 
   tasks:
 
+    # --------------------------------------------------
+    # Check if cluster already initialized
+    # --------------------------------------------------
+    - name: Check if kube-apiserver manifest exists
+      stat:
+        path: /etc/kubernetes/manifests/kube-apiserver.yaml
+      register: apiserver_manifest
+
+    # --------------------------------------------------
+    # Initialize Kubernetes cluster (ONLY ONCE)
+    # --------------------------------------------------
     - name: Initialize Kubernetes cluster
       command: kubeadm init --pod-network-cidr=10.244.0.0/16
-      args:
-        creates: /etc/kubernetes/admin.conf
+      when: not apiserver_manifest.stat.exists
+      register: kubeadm_init
+      changed_when: kubeadm_init.rc == 0
 
-    - name: Setup kubeconfig for ubuntu user
+    # --------------------------------------------------
+    # Ensure kubeconfig directory
+    # --------------------------------------------------
+    - name: Ensure kubeconfig directory exists
       file:
         path: /home/ubuntu/.kube
         state: directory
@@ -17,6 +32,9 @@
         group: ubuntu
         mode: '0755'
 
+    # --------------------------------------------------
+    # Copy admin kubeconfig
+    # --------------------------------------------------
     - name: Copy admin kubeconfig
       copy:
         src: /etc/kubernetes/admin.conf
@@ -26,35 +44,71 @@
         mode: '0644'
         remote_src: yes
 
-    - name: Wait for API server to be reachable
+    # --------------------------------------------------
+    # Wait for kube-apiserver health (LOW LEVEL CHECK)
+    # --------------------------------------------------
+    - name: Wait for kube-apiserver to be healthy
+      shell: |
+        curl -k https://127.0.0.1:6443/healthz
+      register: api_health
+      retries: 20
+      delay: 15
+      until: api_health.stdout == "ok"
+
+    # --------------------------------------------------
+    # Verify kubectl access (SAFE CHECK)
+    # --------------------------------------------------
+    - name: Verify kubectl access
       shell: kubectl get nodes
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
-      register: api_status
-      retries: 15
-      delay: 20
-      until: api_status.rc == 0
+      register: kubectl_check
+      retries: 10
+      delay: 10
+      until: kubectl_check.rc == 0
+
+    # --------------------------------------------------
+    # Install Helm (idempotent)
+    # --------------------------------------------------
+    - name: Check if Helm is installed
+      stat:
+        path: /usr/local/bin/helm
+      register: helm_bin
 
     - name: Install Helm
       shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-      args:
-        creates: /usr/local/bin/helm
+      when: not helm_bin.stat.exists
+
+    # --------------------------------------------------
+    # Install Flannel CNI (ONLY ONCE)
+    # --------------------------------------------------
+    - name: Check if Flannel is already installed
+      stat:
+        path: /etc/cni/net.d/10-flannel.conflist
+      register: flannel_conf
 
     - name: Install Flannel CNI
-      command: kubectl apply --validate=false -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      command: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
-      args:
-        creates: /etc/cni/net.d/10-flannel.conflist
+      when: not flannel_conf.stat.exists
 
-    - name: Generate join command (once)
+    # --------------------------------------------------
+    # Generate join command (SAFE & REUSABLE)
+    # --------------------------------------------------
+    - name: Check if join command already exists
+      stat:
+        path: /tmp/kubeadm_join.sh
+      register: join_script
+
+    - name: Generate join command
       command: kubeadm token create --print-join-command
       register: join_cmd
-      args:
-        creates: /tmp/kubeadm_join.sh
+      when: not join_script.stat.exists
 
-    - name: Save join command..
+    - name: Save join command
       copy:
         content: "{{ join_cmd.stdout }}"
         dest: /tmp/kubeadm_join.sh
         mode: '0755'
+      when: not join_script.stat.exists
