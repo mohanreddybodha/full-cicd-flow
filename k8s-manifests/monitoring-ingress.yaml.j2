@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: monitoring-ingress
-  namespace: default
+  namespace: monitoring
   annotations:
     kubernetes.io/ingress.class: nginx
     # Only keep the whitelist for security
