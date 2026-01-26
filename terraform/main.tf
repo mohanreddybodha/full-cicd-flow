@@ -117,7 +117,7 @@ resource "aws_eip_association" "master_assoc" {
 resource "aws_instance" "worker" {
   count                       = var.worker_count
   ami                         = var.ami
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.k8s_sg.id]
 
