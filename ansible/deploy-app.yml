@@ -53,6 +53,14 @@
       changed_when: false
 
     # --------------------------------------------------
+    # CLEANUP: Remove conflicting ingress from default namespace
+    # --------------------------------------------------
+    - name: Clean up conflicting Ingress in default namespace
+      become_user: ubuntu
+      shell: kubectl delete ingress monitoring-ingress -n default --ignore-not-found=true
+      # --ignore-not-found=true ensures idempotency if the ingress is already deleted
+
+    # --------------------------------------------------
     # Apply ingress LAST (NO WEBHOOK FAILURES)
     # --------------------------------------------------
     - name: Apply monitoring ingress
