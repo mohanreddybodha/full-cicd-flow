@@ -84,7 +84,8 @@ pipeline {
         dir('terraform') {
           sh '''
             terraform init -input=false
-            terraform apply -auto-approve -input=false
+            terraform apply -auto-approve -input=false \
+              -var="admin_ip_cidr=${params.ADMIN_IP_CIDR}"
           '''
         }
       }

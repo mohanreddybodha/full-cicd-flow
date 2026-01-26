@@ -26,14 +26,14 @@ resource "aws_security_group" "k8s_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["var.admin_ip_cidr"]
   }
 
   ingress {
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["var.admin_ip_cidr"]
   }
 
   ingress {
@@ -44,15 +44,15 @@ resource "aws_security_group" "k8s_sg" {
   }
 
   ingress {
-    from_port   = 2379
-    to_port     = 2380
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port   = 10250
-    to_port     = 10250
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

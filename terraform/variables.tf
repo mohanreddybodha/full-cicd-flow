@@ -17,3 +17,8 @@ variable "worker_count" {
   description = "Number of worker nodes"
   default     = 2
 }
+
+variable "admin_ip_cidr" {
+  description = "Admin public IP CIDR for SSH / restricted access"
+  type        = string
+}
