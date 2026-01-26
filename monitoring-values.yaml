@@ -10,8 +10,6 @@ prometheus:
     externalUrl: "/prometheus/"
 
 alertmanager:
-  enabled: true
-
   alertmanagerSpec:
     routePrefix: /alertmanager
     externalUrl: "/alertmanager/"
