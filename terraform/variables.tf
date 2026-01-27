@@ -23,6 +23,3 @@ variable "admin_ip_cidr" {
   type        = string
 }
 
-output "vpc_id" {
-  value = aws_security_group.k8s_sgs.vpc_id
-}

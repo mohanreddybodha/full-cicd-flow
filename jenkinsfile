@@ -101,11 +101,6 @@ pipeline {
             returnStdout: true
           ).trim()
 
-          env.VPC_ID = sh(
-            script: "cd terraform && terraform output -raw vpc_id",
-            returnStdout: true
-          ).trim()
-
           def worker_ips = sh(
             script: "cd terraform && terraform output -json worker_ips | jq -r '.[]'",
             returnStdout: true
@@ -138,7 +133,7 @@ ${workers}
               ansible-playbook -i inventory.ini master.yml \
                 -e cluster_name=kubeadm-cluster \
                 -e region=ap-south-1 \
-                -e vpc_id=${VPC_ID}
+                -e vpc_id=${params.VPC_ID}
               ansible-playbook -i inventory.ini worker.yml
             '''
           }
