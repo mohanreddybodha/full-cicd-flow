@@ -106,7 +106,7 @@
           --set clusterName={{ cluster_name }} \
           --set region={{ region }} \
           --set vpcId={{ vpc_id }} \
-          --set serviceAccount.create=true
+          --set serviceAccount.create=true \
           --set serviceAccount.create=aws-load-balancer-controller
 
     # --------------------------------------------------
