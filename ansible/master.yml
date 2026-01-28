@@ -96,7 +96,11 @@
     - name: Wait for cert-manager pods to be ready
       become_user: ubuntu
       shell: |
-        kubectl wait --for=condition=Ready pods --all -n cert-manager --timeout=300s
+        kubectl get ns cert-manager
+      retries: 10
+      delay: 5
+      until: result.rc == 0
+      register: result
 
     - name: Install AWS Load Balancer Controller
       become_user: ubuntu
