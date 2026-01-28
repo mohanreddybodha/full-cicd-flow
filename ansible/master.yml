@@ -2,10 +2,6 @@
   become: yes
   gather_facts: yes
 
-  var:
-     - hosts: master
-  become: yes
-  gather_facts: yes
 
   tasks:
 
